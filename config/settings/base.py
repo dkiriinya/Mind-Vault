@@ -2,7 +2,9 @@
 (loaded from .env in development). Nothing secret is committed."""
 import os
 from pathlib import Path
+import sys
 
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -77,9 +79,38 @@ TEMPLATES = [
     }
 ]
 
-# MySQL is the real database. DB_ENGINE=sqlite exists ONLY so the test-suite can
-# be smoke-run on machines without MySQL (e.g. CI sandboxes). Never use it for the app.
-if os.environ.get("DB_ENGINE", "mysql") == "sqlite":
+# Database configuration: Neon PostgreSQL is used whenever DATABASE_URL is present.
+database_url = os.environ.get("DATABASE_URL")
+if any(cmd in sys.argv for cmd in ("migrate", "makemigrations")):
+    database_url = os.environ.get("DATABASE_URL_UNPOOLED") or database_url
+
+# If using local Neon WebSocket proxy (for networks/ISPs that block outbound port 5432),
+# ensure the background proxy is running before connecting.
+if database_url and ("127.0.0.1:5432" in database_url or "127.0.0.1:54320" in database_url):
+    import socket
+    import subprocess
+    import time
+    try:
+        s = socket.socket()
+        s.settimeout(0.2)
+        if s.connect_ex(("127.0.0.1", 5432)) != 0:
+            proxy_script = BASE_DIR / "neon_proxy.py"
+            if proxy_script.exists():
+                subprocess.Popen([sys.executable, str(proxy_script)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(0.5)
+        s.close()
+    except Exception:
+        pass
+
+if database_url:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=database_url,
+            conn_max_age=60,
+            conn_health_checks=True,
+        )
+    }
+elif os.environ.get("DB_ENGINE", "mysql") == "sqlite":
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 else:
     DATABASES = {

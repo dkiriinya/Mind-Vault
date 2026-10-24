@@ -17,3 +17,5 @@ tailwindcss
 # Local development artifacts
 sharing-test.log
 tailwindcss.exe
+.neon
+node_modules/

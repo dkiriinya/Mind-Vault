@@ -11,3 +11,8 @@ pypdf>=6.2,<7
 clerk-backend-api>=7.0.0
 # HTTP client for LLM API integration (OpenRouter / Gemini)
 requests>=2.31.0
+# PostgreSQL & Neon database driver and URL parser
+psycopg[binary]>=3.2
+dj-database-url>=2.2
+websockets>=12.0
+
