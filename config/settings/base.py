@@ -110,6 +110,11 @@ if database_url:
             conn_health_checks=True,
         )
     }
+    if (BASE_DIR / "db.sqlite3").exists():
+        DATABASES["sqlite"] = {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
 elif os.environ.get("DB_ENGINE", "mysql") == "sqlite":
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 else:
